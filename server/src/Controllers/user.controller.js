@@ -10,13 +10,15 @@ const { JWT_SECRET } = process.env;
 // Function to generate JWT token
 const generateAccessToken = (user) => {
   return jwt.sign({ email: user.email, password: user.password }, JWT_SECRET, {
-    expiresIn: "15m",
+    expiresIn: "1d",
   });
 };
 
 // Function to generate refresh token
 const generateRefreshToken = (user) => {
-  return jwt.sign({ email: user.email, password: user.password }, JWT_SECRET);
+  return jwt.sign({ email: user.email, password: user.password }, JWT_SECRET, {
+    expiresIn: "3d",
+  });
 };
 
 //Registration
@@ -25,8 +27,8 @@ export const registerUser = async (req, res) => {
     const { username, email, password } = req.body;
     const newUser = new User({ username, email, password });
 
-    const accessToken = generateAccessToken(newUser);
-    newUser.refreshToken = accessToken;
+    // const accessToken = generateAccessToken(newUser);
+    // newUser.refreshToken = accessToken;
     await newUser.save();
     res.status(201).json(newUser);
     console.log("User Created Succesfully");
@@ -55,7 +57,6 @@ export const loginUser = async (req, res) => {
 
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
-      maxAge: 900000,
       secure: true,
     });
     console.log("User Logged In");
