@@ -7,13 +7,6 @@ dotenv.config();
 const User = createUserModel();
 const { JWT_SECRET } = process.env;
 
-// Function to generate JWT token
-const generateAccessToken = (user) => {
-  return jwt.sign({ email: user.email, password: user.password }, JWT_SECRET, {
-    expiresIn: "1d",
-  });
-};
-
 // Function to generate refresh token
 const generateRefreshToken = (user) => {
   return jwt.sign({ email: user.email, password: user.password }, JWT_SECRET, {
@@ -26,9 +19,6 @@ export const registerUser = async (req, res) => {
   try {
     const { username, email, password } = req.body;
     const newUser = new User({ username, email, password });
-
-    // const accessToken = generateAccessToken(newUser);
-    // newUser.refreshToken = accessToken;
     await newUser.save();
     res.status(201).json(newUser);
     console.log("User Created Succesfully");
@@ -53,14 +43,13 @@ export const loginUser = async (req, res) => {
     // Token Generation
     const refreshToken = generateRefreshToken(user);
     user.refreshToken = refreshToken;
-    await user.save();
-
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
-      secure: true,
+      maxage: 86400000,
     });
     console.log("User Logged In");
     res.json({ refreshToken });
+    await user.save();
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Internal Server Error" });
