@@ -53,14 +53,12 @@ export const loginUser = async (req, res) => {
     // Token Generation
     const refreshToken = generateRefreshToken(user);
     user.refreshToken = refreshToken;
-    await user.save();
-
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
-      secure: true,
     });
     console.log("User Logged In");
     res.json({ refreshToken });
+    await user.save();
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Internal Server Error" });
