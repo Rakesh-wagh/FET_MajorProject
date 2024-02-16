@@ -24,7 +24,7 @@ const dbConnection = () => {
   process.on("SIGINT", () => {
     mongoose.connection.close(() => {
       console.log("Database disconnected through app termination");
-      process.exit(0);
+      // process.exit(0);
     });
   });
 };
