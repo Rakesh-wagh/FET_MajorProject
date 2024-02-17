@@ -9,8 +9,8 @@ const { JWT_SECRET } = process.env;
 
 // Function to generate refresh token
 const generateRefreshToken = (user) => {
-  return jwt.sign({ email: user.email, password: user.password }, JWT_SECRET, {
-    expiresIn: "3d",
+  return jwt.sign({ id: user._id, email: user.email }, JWT_SECRET, {
+    expiresIn: "2d",
   });
 };
 
@@ -18,6 +18,22 @@ const generateRefreshToken = (user) => {
 export const registerUser = async (req, res) => {
   try {
     const { username, email, password } = req.body;
+
+    const existingUsername = await User.findOne({ username });
+    if (existingUsername) {
+      return res
+        .status(400)
+        .json({ error: "Username already exists. Choose another username." });
+    }
+
+    // Check if email already exists
+    const existingEmail = await User.findOne({ email });
+    if (existingEmail) {
+      return res
+        .status(400)
+        .json({ error: "Email already exists. Choose another email." });
+    }
+
     const newUser = new User({ username, email, password });
     await newUser.save();
     res.status(201).json(newUser);
@@ -37,13 +53,13 @@ export const loginUser = async (req, res) => {
     }
     const passwordMatch = await bcrypt.compare(password, user.password);
     if (!passwordMatch) {
-      return res.status(401).json({ error: "Invalid email or password" });
+      return res.status(401).json({ error: "Invalid  password" });
     }
 
     // Token Generation
     const refreshToken = generateRefreshToken(user);
     user.refreshToken = refreshToken;
-    res.cookie("refreshToken", refreshToken, {
+    res.cookie("Token", refreshToken, {
       httpOnly: true,
       maxage: 86400000,
     });
@@ -58,34 +74,9 @@ export const loginUser = async (req, res) => {
 
 // Logout
 export const logoutUser = (req, res) => {
-  res.clearCookie("refreshToken");
+  res.clearCookie("Token");
   res.json({
-    message: "Logout successful (Token will expire on the client side)",
+    message: "Logout successful ",
   });
   console.log("User Logged Out");
-};
-
-// Verification Of Token
-export const verifyRefreshToken = (req, res, next) => {
-  const refreshToken = req.cookies.refreshToken;
-
-  if (!refreshToken) {
-    return res
-      .status(401)
-      .json({ message: "Unauthorized - Refresh token missing" });
-  }
-
-  jwt.verify(refreshToken, JWT_SECRET, (err, decoded) => {
-    if (err) {
-      return res
-        .status(403)
-        .json({ message: "Forbidden - Invalid refresh token" });
-    }
-
-    // You can access user information from decoded payload
-    req.user = decoded;
-    console.log("User Authenticated");
-
-    next();
-  });
 };
